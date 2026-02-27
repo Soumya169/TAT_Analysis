@@ -12,7 +12,6 @@ st.title("🚛 Transport TAT Calculator")
 st.markdown("Upload your Excel → Auto-calculate TAT columns in **HH:MM:SS** → Download as properly formatted Excel")
 st.markdown("---")
 
-# ── UPLOAD ──────────────────────────────────────────────────
 uploaded = st.file_uploader("📂 Upload Excel File", type=["xlsx", "xls"])
 
 if uploaded is None:
@@ -29,7 +28,6 @@ if uploaded is None:
     """)
     st.stop()
 
-# ── LOAD FILE ────────────────────────────────────────────────
 try:
     file_bytes = uploaded.read()
     df = pd.read_excel(io.BytesIO(file_bytes), keep_default_na=False, na_filter=False)
@@ -67,9 +65,7 @@ with c2:
     col_gateout = st.selectbox("GateOut (datetime)",     all_cols, index=auto_index("GateOut"))
 
 st.markdown("---")
-
 if st.button("⚙️ Calculate TAT", type="primary", use_container_width=True):
-
     result = df.copy()
     errors  = []
     calc_log = []
@@ -82,7 +78,6 @@ if st.button("⚙️ Calculate TAT", type="primary", use_container_width=True):
             errors.append(f"DateTime parse failed for '{col_name}': {ex}")
             return None
 
-    # ── helper: seconds → HH:MM:SS string ────────────────
     def sec_to_hms(sec):
         if pd.isna(sec) or sec < 0:
             return ""
@@ -92,7 +87,6 @@ if st.button("⚙️ Calculate TAT", type="primary", use_container_width=True):
         s = sec % 60
         return f"{h:02d}:{m:02d}:{s:02d}"
 
-    # ── helper: diff → HH:MM:SS column ───────────────────
     def to_hhmmss(a, b, label):
         try:
             diff_sec = (b - a).dt.total_seconds()
@@ -104,14 +98,12 @@ if st.button("⚙️ Calculate TAT", type="primary", use_container_width=True):
             errors.append(f"Time diff failed for {label}: {ex}")
             return None
 
-    # Parse datetimes
     dt_yardin  = to_dt(col_yardin)  if col_yardin  != "-- Not Available --" else None
     dt_gatein  = to_dt(col_gatein)  if col_gatein  != "-- Not Available --" else None
     dt_grosswt = to_dt(col_grosswt) if col_grosswt != "-- Not Available --" else None
     dt_tarewt  = to_dt(col_tarewt)  if col_tarewt  != "-- Not Available --" else None
     dt_gateout = to_dt(col_gateout) if col_gateout != "-- Not Available --" else None
 
-    # Parse summary
     st.markdown("#### 📅 DateTime Parse Summary")
     cols5 = st.columns(5)
     for widget, label, dt_s, col_n in [
@@ -129,7 +121,6 @@ if st.button("⚙️ Calculate TAT", type="primary", use_container_width=True):
     st.markdown("---")
     st.markdown("#### ⚙️ Calculation Results (HH:MM:SS)")
 
-    # Calculate all 5 TAT columns
     calcs = [
         ("YI-GI", dt_yardin,  dt_gatein,  "YardIn",      "GateIn"),
         ("GI-GW", dt_gatein,  dt_grosswt, "GateIn",      "GrossWeight"),
@@ -159,7 +150,6 @@ if st.button("⚙️ Calculate TAT", type="primary", use_container_width=True):
         for e in errors:
             st.write(f"- {e}")
 
-    # Row count check
     st.markdown("---")
     rc1, rc2, rc3 = st.columns(3)
     rc1.metric("Uploaded rows", total_rows)
@@ -176,7 +166,6 @@ if st.button("⚙️ Calculate TAT", type="primary", use_container_width=True):
     ] if c in result.columns]
     st.dataframe(result[preview_cols], use_container_width=True, height=420)
 
-    # ── BUILD PROPERLY FORMATTED EXCEL ───────────────────
     st.markdown("---")
     st.subheader("⬇️ Download")
 
@@ -187,16 +176,13 @@ if st.button("⚙️ Calculate TAT", type="primary", use_container_width=True):
         wb = writer.book
         ws = writer.sheets["TAT Result"]
 
-        # ── Date format for datetime columns ─────────────
         dt_col_names = [col_yardin, col_gatein, col_grosswt, col_tarewt, col_gateout]
         dt_col_names = [c for c in dt_col_names if c != "-- Not Available --"]
 
-        # Map column name → Excel column letter
         col_letter_map = {}
         for idx, col_name in enumerate(result.columns, 1):
             col_letter_map[col_name] = get_column_letter(idx)
 
-        # Apply DD-MM-YYYY HH:MM:SS format to all datetime columns
         date_fmt = "DD-MM-YYYY HH:MM:SS"
         for col_name in dt_col_names:
             if col_name in col_letter_map:
@@ -215,7 +201,6 @@ if st.button("⚙️ Calculate TAT", type="primary", use_container_width=True):
                         except:
                             pass  # keep as string if parse fails
 
-        # Apply [HH]:MM:SS text format label to TAT columns (stored as text HH:MM:SS)
         tat_green_fill = PatternFill("solid", start_color="E2EFDA")
         tat_font       = Font(name="Arial", size=10, bold=True, color="375623")
         center_align   = Alignment(horizontal="center", vertical="center")
@@ -231,7 +216,6 @@ if st.button("⚙️ Calculate TAT", type="primary", use_container_width=True):
                     # Store as text explicitly so Excel doesn't convert to serial number
                     cell.number_format = "@"
 
-        # ── Header styling ────────────────────────────────
         header_fill     = PatternFill("solid", start_color="1F4E79")
         header_fill_tat = PatternFill("solid", start_color="375623")
         header_font     = Font(name="Arial", size=10, bold=True, color="FFFFFF")
